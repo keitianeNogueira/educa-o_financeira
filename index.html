@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Todo sonho cabe num plano: dinâmica de orçamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fundo:#EEF6FB;
+    --tinta:#243042;
+    --suave:#5b6b80;
+    --ess:#3A7BD5;
+    --meta:#F2A93B;
+    --res:#2FA37A;
+    --laz:#E05A8A;
+    --grama:#8BCF7E;
+    --display:"Baloo 2","Trebuchet MS",sans-serif;
+    --texto:"Nunito",Verdana,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fundo);color:var(--tinta);font-family:var(--texto);font-size:1.0625rem;line-height:1.55}
+  button{font:inherit;cursor:pointer}
+  :focus-visible{outline:3px solid var(--ess);outline-offset:3px}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0}
+
+  /* Topo */
+  header{padding:40px 0 10px;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center}
+  h1{font-size:clamp(2.6rem,6.2vw,4.6rem);font-weight:800;letter-spacing:-.01em}
+  .intro{color:var(--suave);max-width:44ch;margin:14px 0 0}
+  .potes-topo{display:flex;gap:10px;justify-content:center;align-items:flex-end}
+  .potes-topo svg{width:22%;max-width:120px}
+  .potes-topo svg:nth-child(2){transform:translateY(-14px)}
+  .potes-topo svg:nth-child(4){transform:translateY(-8px)}
+
+  /* Passos */
+  .passos{display:flex;gap:8px;margin:28px 0 8px;flex-wrap:wrap}
+  .passos span{padding:6px 14px;border-radius:999px;background:#fff;color:var(--suave);font-weight:700;font-size:.95rem;border:2px solid transparent}
+  .passos span.ativo{border-color:var(--tinta);color:var(--tinta)}
+  .passos span.feito{background:var(--tinta);color:#fff}
+
+  .etapa{padding:24px 0 48px}
+  .etapa[hidden]{display:none}
+  h2{font-size:clamp(1.9rem,4vw,2.6rem);font-weight:800;margin-bottom:6px}
+  .sub{color:var(--suave);margin:0 0 26px;max-width:62ch}
+
+  .btn{border:3px solid var(--tinta);background:var(--tinta);color:#fff;border-radius:14px;padding:12px 24px;font-weight:800;font-size:1.05rem;box-shadow:0 4px 0 #0f1824;transition:transform .08s}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #0f1824}
+  .btn.claro{background:#fff;color:var(--tinta);box-shadow:0 4px 0 var(--tinta)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .acoes{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;align-items:center}
+
+  /* Etapa 1: metas */
+  .metas{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .meta-card{background:#fff;border:3px solid var(--tinta);border-radius:18px;padding:18px 14px 16px;text-align:center;color:var(--tinta);box-shadow:0 5px 0 var(--tinta);transition:transform .12s}
+  .meta-card:hover{transform:translateY(-3px)}
+  .meta-card[aria-pressed="true"]{background:#FFF3DC;border-color:var(--meta);box-shadow:0 5px 0 #c9861c}
+  .meta-card svg{width:84px;height:84px;display:block;margin:0 auto 8px}
+  .meta-card b{display:block;font-family:var(--display);font-size:1.3rem;line-height:1.1}
+  .meta-card small{font-size:1rem;color:var(--suave);font-weight:700}
+
+  /* Etapa 2: orçamento */
+  .renda{display:flex;gap:18px;align-items:center;background:#fff;border-radius:18px;padding:16px 20px;border:3px solid var(--tinta);margin-bottom:22px;flex-wrap:wrap}
+  .moedas{display:flex;align-items:flex-end;gap:3px;min-height:44px}
+  .moedas i{width:26px;height:10px;border-radius:50%;background:#F2C14E;border:2px solid #b8871a;display:block;margin-top:-5px}
+  .pilha{display:flex;flex-direction:column-reverse}
+  .renda .falta{font-family:var(--display);font-size:2rem;font-weight:800;line-height:1}
+  .renda .l{color:var(--suave);font-size:.95rem}
+  .barra{flex:1;min-width:220px;height:22px;border-radius:11px;background:#e3eaf0;display:flex;overflow:hidden;border:2px solid var(--tinta)}
+  .barra div{height:100%;transition:width .35s ease}
+
+  .potes{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .pote-box{background:#fff;border-radius:18px;padding:16px 12px 14px;text-align:center}
+  .pote-box svg{width:100%;max-width:130px;display:block;margin:0 auto}
+  .pote-box h3{font-size:1.35rem;font-weight:800;margin-top:6px}
+  .pote-box p{margin:2px 0 8px;color:var(--suave);font-size:.92rem;min-height:2.6em}
+  .valor{font-family:var(--display);font-weight:800;font-size:1.7rem;line-height:1}
+  .ajuste{display:flex;justify-content:center;gap:10px;margin-top:10px}
+  .ajuste button{width:44px;height:44px;border-radius:12px;border:3px solid var(--tinta);background:#fff;font-weight:800;font-size:1.3rem;line-height:1;color:var(--tinta)}
+  .ajuste button:hover{background:var(--tinta);color:#fff}
+  .aviso{margin-top:16px;padding:12px 16px;border-radius:12px;background:#fff;border-left:6px solid var(--meta);max-width:70ch}
+  .aviso.ok{border-color:var(--res)}
+  .liq{transition:transform .45s cubic-bezier(.3,1.4,.5,1)}
+
+  /* Etapa 3: seis meses */
+  .estrada-box{background:linear-gradient(#CDEBFF 0 55%, var(--grama) 55%);border-radius:22px;border:3px solid var(--tinta);overflow:hidden;position:relative}
+  .estrada-box svg{display:block;width:100%;height:auto}
+  .mes-tag{position:absolute;top:12px;left:14px;background:#fff;border:3px solid var(--tinta);border-radius:12px;padding:4px 12px;font-family:var(--display);font-weight:800;font-size:1.15rem}
+  .viajante{transition:transform .9s cubic-bezier(.5,0,.3,1)}
+  .sim{display:grid;grid-template-columns:1fr 330px;gap:24px;margin-top:22px;align-items:start}
+  .evento{background:#fff;border-radius:20px;border:3px solid var(--tinta);padding:24px}
+  .evento .tipo{display:inline-block;font-weight:800;font-size:.9rem;padding:3px 10px;border-radius:8px;margin-bottom:10px;color:#fff}
+  .evento h3{font-size:1.7rem;font-weight:800;margin-bottom:8px}
+  .evento p{margin:0 0 16px;color:var(--suave)}
+  .escolhas{display:grid;gap:10px}
+  .escolha{text-align:left;border:3px solid #d8e1e8;background:#fff;border-radius:14px;padding:12px 16px;color:var(--tinta);font-weight:700}
+  .escolha small{display:block;font-weight:400;color:var(--suave)}
+  .escolha:hover:not(:disabled){border-color:var(--tinta)}
+  .escolha:disabled{cursor:default;opacity:.55}
+  .escolha.marcada{opacity:1;border-color:var(--ess);background:#eaf2fd}
+  .retorno{margin-top:16px;padding:12px 16px;border-radius:12px;display:none}
+  .retorno.mostra{display:block}
+  .retorno.bom{background:#e2f4ec;border-left:6px solid var(--res)}
+  .retorno.ruim{background:#fbe3ea;border-left:6px solid var(--laz)}
+  .retorno.neutro{background:#fdf1dc;border-left:6px solid var(--meta)}
+  .cofres{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cofres .pote-box{padding:12px 8px}
+  .cofres .pote-box p{min-height:0}
+  .deposito{font-size:.9rem;color:var(--suave);margin-top:10px;background:#fff;border-radius:12px;padding:10px 14px}
+
+  /* Etapa 4 */
+  .resultado{background:#fff;border-radius:22px;border:3px solid var(--tinta);padding:28px;display:grid;grid-template-columns:180px 1fr;gap:28px;align-items:center}
+  .resultado svg.grande{width:100%}
+  .resultado h3{font-size:2.3rem;font-weight:800;margin-bottom:8px}
+  .licoes{list-style:none;padding:0;margin:24px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .licoes li{background:#fff;border-radius:14px;padding:12px 16px;border-left:6px solid var(--meta)}
+  .licoes li.bom{border-color:var(--res)}
+  .licoes li.ruim{border-color:var(--laz)}
+  .licoes b{display:block}
+
+  .conversa{border-top:3px dashed #c5d3de;padding:36px 0 60px}
+  .conversa ol{max-width:66ch;padding-left:1.3em}
+  .conversa li{margin-bottom:10px}
+
+  /* Moedas caindo na conquista */
+  .chuva{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9}
+  .chuva i{position:absolute;top:-30px;width:22px;height:22px;border-radius:50%;background:#F2C14E;border:3px solid #b8871a;animation:cai 2.2s ease-in forwards}
+  @keyframes cai{to{transform:translateY(110vh) rotate(540deg)}}
+
+  @media (max-width:820px){
+    header{grid-template-columns:1fr}
+    .metas,.potes{grid-template-columns:1fr 1fr}
+    .sim,.resultado{grid-template-columns:1fr}
+    .resultado svg.grande{max-width:140px}
+    .licoes{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important}
+    .chuva{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Todo sonho cabe num plano</h1>
+      <p class="intro">Escolha um objetivo, divida o dinheiro em potes e atravesse seis meses de surpresas. No fim, descubra se o seu orçamento te levou até lá.</p>
+    </div>
+    <div class="potes-topo" id="potesTopo" aria-hidden="true"></div>
+  </header>
+
+  <div class="passos" aria-label="Etapas">
+    <span id="p1">1. Meta</span><span id="p2">2. Orçamento</span><span id="p3">3. Seis meses</span><span id="p4">4. Resultado</span>
+  </div>
+
+  <!-- ETAPA 1 -->
+  <section class="etapa" id="e1">
+    <h2>O que você quer conquistar?</h2>
+    <p class="sub">Todo planejamento começa com um objetivo claro: o que é, quanto custa e em quanto tempo. Você vai receber <strong>R$ 600 por mês</strong> (mesada mais um bico de fim de semana). Escolha sua meta.</p>
+    <div class="metas" id="metas"></div>
+    <div class="acoes"><button class="btn" id="ir2" disabled>Montar meu orçamento</button></div>
+  </section>
+
+  <!-- ETAPA 2 -->
+  <section class="etapa" id="e2" hidden>
+    <h2>Divida o dinheiro em potes</h2>
+    <p class="sub">Orçamento é decidir, antes de gastar, para onde cada real vai. Use + e − para encher os potes até não sobrar nenhuma moeda. Seus gastos essenciais somam R$ 200: ônibus R$ 120, lanche R$ 60 e material R$ 20.</p>
+
+    <div class="renda">
+      <div class="moedas" id="moedas" aria-hidden="true"></div>
+      <div>
+        <div class="falta" id="falta">R$ 600</div>
+        <div class="l">ainda para distribuir</div>
+      </div>
+      <div class="barra" id="barra" aria-hidden="true"></div>
+    </div>
+
+    <div class="potes" id="potes"></div>
+    <div class="aviso" id="aviso" role="status"></div>
+    <div class="acoes">
+      <button class="btn claro" id="sugestao">Ver uma sugestão</button>
+      <button class="btn" id="ir3" disabled>Começar os seis meses</button>
+    </div>
+  </section>
+
+  <!-- ETAPA 3 -->
+  <section class="etapa" id="e3" hidden>
+    <h2>Seis meses de vida real</h2>
+    <p class="sub">Todo mês o dinheiro entra nos potes do jeito que você planejou. Mas a vida traz surpresas. O bonequinho só anda quando entra dinheiro no pote da meta.</p>
+    <div class="estrada-box">
+      <div class="mes-tag" id="mesTag">Mês 1</div>
+      <svg viewBox="0 0 800 220" id="estrada" role="img" aria-label="Caminho até a meta"></svg>
+    </div>
+    <div class="sim">
+      <div class="evento" id="evento"></div>
+      <div>
+        <div class="cofres" id="cofres"></div>
+        <div class="deposito" id="deposito"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ETAPA 4 -->
+  <section class="etapa" id="e4" hidden>
+    <div class="resultado" id="resultado"></div>
+    <ul class="licoes" id="licoes"></ul>
+    <div class="acoes">
+      <button class="btn" id="refazerPlano">Refazer o orçamento</button>
+      <button class="btn claro" id="outraMeta">Escolher outra meta</button>
+    </div>
+  </section>
+
+  <section class="conversa">
+    <h2>Para conversar em turma</h2>
+    <ol>
+      <li>Quem conquistou a meta? O que essas pessoas fizeram de diferente no orçamento?</li>
+      <li>Quando a passagem aumentou, o que é melhor: mudar o plano ou deixar a reserva cobrir todo mês? Por quê?</li>
+      <li>Por que a reserva e o pote da meta precisam ser separados?</li>
+      <li>Um orçamento sem nenhum lazer funciona na vida real? Quanto de diversão é razoável?</li>
+      <li>Pense em algo que você quer de verdade. Quanto custa e quanto precisaria guardar por mês para ter em 6 meses?</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const real = v => "R$ " + Math.round(v).toLocaleString("pt-BR");
+const RENDA = 600, PASSO = 25, ESSENCIAL = 200;
+
+/* ---------- Ilustrações ---------- */
+const CORPO = "M22 32 h76 q8 6 8 20 v76 q0 16 -16 16 h-60 q-16 0 -16 -16 v-76 q0 -14 8 -20 z";
+let jarId = 0;
+function pote(cor, rotulo){
+  const id = "c" + (jarId++);
+  return {id, svg:`<svg viewBox="0 0 120 150" aria-hidden="true">
+    <defs><clipPath id="${id}"><path d="${CORPO}"/></clipPath></defs>
+    <path d="${CORPO}" fill="#fff"/>
+    <g clip-path="url(#${id})"><g class="liq" id="l-${id}" style="transform:translateY(118px)">
+      <path d="M0 30 q15 -9 30 0 t30 0 t30 0 t30 0 v130 h-120z" fill="${cor}"/>
+      <circle cx="40" cy="70" r="4" fill="#fff" opacity=".4"/><circle cx="75" cy="95" r="3" fill="#fff" opacity=".4"/>
+    </g></g>
+    <path d="${CORPO}" fill="none" stroke="#243042" stroke-width="4" stroke-linejoin="round"/>
+    <rect x="28" y="14" width="64" height="16" rx="5" fill="${cor}" stroke="#243042" stroke-width="4"/>
+    <path d="M32 60 v48" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".7"/>
+    ${rotulo?`<rect x="36" y="78" width="48" height="26" rx="5" fill="#fff" stroke="#243042" stroke-width="3"/><text x="60" y="97" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="17" fill="#243042">${rotulo}</text>`:""}
+  </svg>`};
+}
+function enche(id, r){
+  const el = document.getElementById("l-" + id);
+  if (el) el.style.transform = `translateY(${118 * (1 - Math.max(0, Math.min(1, r)))}px)`;
+}
+
+const icones = {
+  bike:`<svg viewBox="0 0 64 64"><circle cx="15" cy="42" r="11" fill="none" stroke="#243042" stroke-width="4"/><circle cx="49" cy="42" r="11" fill="none" stroke="#243042" stroke-width="4"/><path d="M15 42 L26 24 H44 L49 42 M26 24 L33 42 L44 24 M22 18 h8" fill="none" stroke="#F2A93B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  violao:`<svg viewBox="0 0 64 64"><path d="M30 34 L52 10" stroke="#243042" stroke-width="6" stroke-linecap="round"/><rect x="48" y="4" width="10" height="9" rx="2" fill="#243042" transform="rotate(45 53 8)"/><ellipse cx="24" cy="42" rx="14" ry="12" fill="#F2A93B" stroke="#243042" stroke-width="4"/><ellipse cx="32" cy="30" rx="10" ry="9" fill="#F2A93B" stroke="#243042" stroke-width="4"/><circle cx="26" cy="38" r="4" fill="#243042"/></svg>`,
+  celular:`<svg viewBox="0 0 64 64"><rect x="18" y="6" width="28" height="52" rx="6" fill="#F2A93B" stroke="#243042" stroke-width="4"/><rect x="23" y="13" width="18" height="34" rx="2" fill="#fff"/><circle cx="32" cy="52" r="2.5" fill="#243042"/></svg>`,
+  viagem:`<svg viewBox="0 0 64 64"><rect x="10" y="20" width="44" height="34" rx="6" fill="#F2A93B" stroke="#243042" stroke-width="4"/><path d="M24 20 v-8 h16 v8" fill="none" stroke="#243042" stroke-width="4"/><path d="M22 20 v34 M42 20 v34" stroke="#243042" stroke-width="4"/></svg>`
+};
+const metas = [
+  {id:"bike", nome:"Bicicleta", art:"a bicicleta", preco:900},
+  {id:"violao", nome:"Violão", art:"o violão", preco:750},
+  {id:"celular", nome:"Celular novo", art:"o celular novo", preco:1200},
+  {id:"viagem", nome:"Viagem de formatura", art:"a viagem de formatura", preco:1500}
+];
+const potesInfo = [
+  {id:"ess", nome:"Essenciais", desc:"Ônibus, lanche e material", cor:"#3A7BD5"},
+  {id:"meta", nome:"Minha meta", desc:"Dinheiro para o sonho", cor:"#F2A93B"},
+  {id:"res", nome:"Reserva", desc:"Para imprevistos", cor:"#2FA37A"},
+  {id:"laz", nome:"Lazer", desc:"Diversão planejada", cor:"#E05A8A"}
+];
+
+/* Potes do topo */
+(function(){
+  const box = document.getElementById("potesTopo"), fills = [.55,.8,.35,.6], ids = [];
+  box.innerHTML = potesInfo.map(p => { const j = pote(p.cor); ids.push(j.id); return j.svg; }).join("");
+  setTimeout(() => ids.forEach((id,k) => enche(id, fills[k])), 250);
+})();
+
+/* ---------- Estado ---------- */
+let meta = null;
+let aloc = {ess:0, meta:0, res:0, laz:0};
+
+function etapa(n){
+  for (let k=1;k<=4;k++){
+    document.getElementById("e"+k).hidden = k !== n;
+    const p = document.getElementById("p"+k);
+    p.className = k < n ? "feito" : k === n ? "ativo" : "";
+  }
+  document.getElementById("e"+n).scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+}
+
+/* ---------- Etapa 1 ---------- */
+const metasBox = document.getElementById("metas");
+metasBox.innerHTML = metas.map(m => `<button class="meta-card" aria-pressed="false" data-id="${m.id}">${icones[m.id]}<b>${m.nome}</b><small>${real(m.preco)}</small></button>`).join("");
+metasBox.querySelectorAll(".meta-card").forEach(b => b.addEventListener("click", () => {
+  metasBox.querySelectorAll(".meta-card").forEach(x => x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true");
+  meta = metas.find(m => m.id === b.dataset.id);
+  document.getElementById("ir2").disabled = false;
+}));
+document.getElementById("ir2").onclick = () => { montaOrcamento(); etapa(2); };
+
+/* ---------- Etapa 2 ---------- */
+let jarsOrc = {};
+function montaOrcamento(){
+  const box = document.getElementById("potes");
+  box.innerHTML = potesInfo.map(p => {
+    const j = pote(p.cor); jarsOrc[p.id] = j.id;
+    return `<div class="pote-box">${j.svg}<h3>${p.nome}</h3><p>${p.desc}</p>
+      <div class="valor" id="v-${p.id}">R$ 0</div>
+      <div class="ajuste"><button data-p="${p.id}" data-d="-1" aria-label="Tirar ${PASSO} reais de ${p.nome}">−</button><button data-p="${p.id}" data-d="1" aria-label="Colocar ${PASSO} reais em ${p.nome}">+</button></div></div>`;
+  }).join("");
+  box.querySelectorAll(".ajuste button").forEach(b => b.onclick = () => {
+    const p = b.dataset.p, d = +b.dataset.d * PASSO;
+    const falta = RENDA - soma();
+    if (d > 0 && falta < d) return;
+    if (d < 0 && aloc[p] < PASSO) return;
+    aloc[p] += d; atualizaOrc();
+  });
+  atualizaOrc();
+}
+const soma = () => aloc.ess + aloc.meta + aloc.res + aloc.laz;
+function atualizaOrc(){
+  const falta = RENDA - soma();
+  document.getElementById("falta").textContent = real(falta);
+  const n = Math.round(falta / 50), pilhas = [];
+  for (let k=0;k<n;k+=3) pilhas.push(`<div class="pilha">${"<i></i>".repeat(Math.min(3,n-k))}</div>`);
+  document.getElementById("moedas").innerHTML = pilhas.join("");
+  document.getElementById("barra").innerHTML = potesInfo.map(p => `<div style="width:${aloc[p.id]/RENDA*100}%;background:${p.cor}"></div>`).join("");
+  potesInfo.forEach(p => { document.getElementById("v-"+p.id).textContent = real(aloc[p.id]); enche(jarsOrc[p.id], aloc[p.id]/300); });
+
+  const av = document.getElementById("aviso");
+  let msg, ok = false;
+  if (aloc.ess < ESSENCIAL) msg = `Os essenciais ainda não estão cobertos: faltam ${real(ESSENCIAL - aloc.ess)}. Primeiro o que é obrigatório, depois o resto.`;
+  else if (falta > 0) msg = `Ainda sobram ${real(falta)} sem destino. Dinheiro sem plano costuma sumir.`;
+  else if (aloc.meta === 0) msg = "Tudo distribuído, mas nada foi para a meta. Assim o sonho não sai do lugar. Você pode seguir mesmo assim, se quiser.";
+  else {
+    ok = true;
+    const meses = Math.ceil(meta.preco / aloc.meta);
+    msg = `Plano fechado! Guardando ${real(aloc.meta)} por mês, você conquista ${meta.art} em cerca de <strong>${meses} ${meses===1?"mês":"meses"}</strong>, se nada der errado.`;
+    if (aloc.res === 0) msg += " Atenção: sem reserva, qualquer imprevisto vai sair do dinheiro da meta.";
+  }
+  av.innerHTML = msg; av.className = "aviso" + (ok ? " ok" : "");
+  document.getElementById("ir3").disabled = !(aloc.ess >= ESSENCIAL && falta === 0);
+}
+document.getElementById("sugestao").onclick = () => { aloc = {ess:200, meta:200, res:75, laz:125}; atualizaOrc(); };
+document.getElementById("ir3").onclick = () => { iniciaSim(); etapa(3); };
+
+/* ---------- Etapa 3 ---------- */
+let S, jarsSim = {}, estradaPath, estradaLen;
+const eventos = [
+  {tipo:"Compromisso", cor:"#3A7BD5", t:"Aniversário do melhor amigo",
+   d:"É no sábado e você quer dar um presente de uns R$ 50.",
+   o:[
+    {t:"Uso o dinheiro do lazer deste mês", s:"Sai do pote de lazer", f:()=>{
+      if (S.lazMes >= 50){ S.lazMes -= 50; return ["bom","Para isso serve o lazer planejado: o presente coube no orçamento sem mexer na meta."]; }
+      const falta = 50 - S.lazMes; S.lazMes = 0; tiraMeta(falta);
+      return ["neutro",`O lazer só tinha parte do valor. Os outros ${real(falta)} saíram da meta.`]; }},
+    {t:"Faço um presente criativo: cartão e um bolo caseiro", s:"Quase não gasta nada", f:()=>["bom","Carinho não depende de preço. Criatividade também é planejamento financeiro."]},
+    {t:"Tiro do pote da meta, depois eu reponho", s:"−R$ 50 da meta", f:()=>{ tiraMeta(50); return ["ruim","“Depois eu reponho” quase nunca acontece. A meta ficou mais longe."]; }}
+   ]},
+  {tipo:"Mudança", cor:"#7a5cc4", t:"A passagem de ônibus aumentou",
+   d:"A partir de agora você vai gastar R$ 25 a mais por mês com transporte.",
+   o:[
+    {t:"Refaço o orçamento: tiro R$ 25 do lazer", s:"Essenciais sobem, lazer diminui", f:()=>{
+      let resto = 25; const doLaz = Math.min(resto, aloc.laz); aloc.laz -= doLaz; resto -= doLaz; const doRes = Math.min(resto, aloc.res); aloc.res -= doRes; resto -= doRes; aloc.meta = Math.max(0, aloc.meta - resto); aloc.ess += 25;
+      return ["bom","Orçamento é vivo: quando a realidade muda, o plano muda junto. Você manteve o controle."]; }},
+    {t:"Deixo a reserva cobrir a diferença todo mês", s:"−R$ 25 da reserva por mês", f:()=>{ S.dreno = 25; return ["ruim","A reserva é para imprevistos, não para cobrir um gasto fixo. Ela vai encolher mês após mês."]; }}
+   ]},
+  {tipo:"Tentação", cor:"#E05A8A", t:"Promoção relâmpago: “só hoje!”",
+   d:"Aquele tênis que você nem estava procurando está de R$ 350 por R$ 200.",
+   o:[
+    {t:"Compro com o dinheiro da meta, é muito barato", s:"−R$ 200 da meta", f:()=>{ tiraMeta(200); return ["ruim","Desconto só é economia se você já ia comprar. Senão, é gasto. E a meta andou para trás."]; }},
+    {t:"Não estava no plano, deixo passar", s:"Nada muda", f:()=>["bom","A pressa do “só hoje” é feita para você não pensar. Quem tem meta clara resiste melhor."]},
+    {t:"Anoto como próxima meta e começo a juntar depois", s:"Nada muda agora", f:()=>["bom","Transformar impulso em planejamento é uma ótima estratégia."]}
+   ]},
+  {tipo:"Boa notícia", cor:"#2FA37A", t:"Renda extra!",
+   d:"Você ajudou um vizinho a organizar a garagem e ganhou R$ 100.",
+   o:[
+    {t:"Tudo para o lazer, eu mereço", s:"+R$ 100 para gastar", f:()=>["neutro","Merece mesmo! Só que essa grana podia ter adiantado seu sonho."]},
+    {t:"Metade na meta, metade na reserva", s:"+R$ 50 em cada pote", f:()=>{ S.meta += 50; S.res += 50; return ["bom","Equilíbrio perfeito: a meta avançou e sua proteção aumentou."]; }},
+    {t:"Tudo na meta", s:"+R$ 100 na meta", f:()=>{ S.meta += 100; return ["bom","Dinheiro extra acelera sonhos. Você chegou mais perto!"]; }}
+   ]},
+  {tipo:"Imprevisto", cor:"#d9822b", t:"Seus óculos quebraram",
+   d:"O conserto custa R$ 120 e você precisa deles para estudar.",
+   o:[
+    {t:"Pago com a reserva", s:"Sai da reserva primeiro", f:()=>{
+      const r = Math.min(120, S.res); S.res -= r;
+      if (r === 120) return ["bom","É exatamente para isso que a reserva existe. A meta nem sentiu."];
+      tiraMeta(120 - r);
+      return ["neutro", r>0 ? `A reserva cobriu ${real(r)}. O resto saiu da meta. Uma reserva maior teria protegido seu sonho.` : "Sem reserva, o conserto saiu inteiro da meta. Imprevistos sempre acontecem."]; }},
+    {t:"Tiro direto da meta", s:"−R$ 120 da meta", f:()=>{ tiraMeta(120); return [S.res>=120?"ruim":"neutro", S.res>=120 ? "Você tinha reserva e mesmo assim mexeu no sonho. Cada pote tem sua função." : "Sem reserva suficiente, não teve jeito. Por isso ela é tão importante."]; }}
+   ]},
+  {tipo:"Oportunidade", cor:"#F2A93B", t:"Sua meta entrou em promoção!",
+   d:"", o:[]}
+];
+function tiraMeta(v){ const t = Math.min(v, S.meta); S.meta -= t; S.divida = (S.divida||0) + (v - t); }
+
+function iniciaSim(){
+  S = {mes:0, meta:0, res:0, lazMes:0, dreno:0, divida:0, hist:[], comprou:false};
+  const box = document.getElementById("cofres");
+  box.innerHTML = [["meta","Pote da meta","#F2A93B"],["res","Reserva","#2FA37A"]].map(([id,n,c]) => {
+    const j = pote(c); jarsSim[id] = j.id;
+    return `<div class="pote-box">${j.svg}<h3>${n}</h3><div class="valor" id="s-${id}">R$ 0</div><p id="sp-${id}"></p></div>`;
+  }).join("");
+  desenhaEstrada();
+  proximoMes();
+}
+function desenhaEstrada(){
+  const svg = document.getElementById("estrada");
+  svg.innerHTML = `
+    <circle cx="700" cy="46" r="26" fill="#FFD85A"/>
+    <path d="M60 60 q20 -18 40 0 q18 -12 34 4 h-74z" fill="#fff"/><path d="M380 44 q20 -18 40 0 q18 -12 34 4 h-74z" fill="#fff"/>
+    <path d="M0 121 q120 -40 260 0 t300 -6 t240 4 v101 h-800z" fill="#78c36b"/>
+    <path id="rua" d="M40 190 C 170 190 180 135 300 135 S 440 185 560 170 S 680 135 740 135" fill="none" stroke="#6d6258" stroke-width="30" stroke-linecap="round"/>
+    <path d="M40 190 C 170 190 180 135 300 135 S 440 185 560 170 S 680 135 740 135" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="12 12"/>
+    <g transform="translate(704 64) scale(1.1)">${icones[meta.id].replace('<svg viewBox="0 0 64 64">','').replace('</svg>','')}</g>
+    <text x="740" y="178" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="18" fill="#243042">${real(meta.preco)}</text>
+    <g class="viajante" id="viajante">
+      <ellipse cx="0" cy="4" rx="14" ry="4" fill="#000" opacity=".2"/>
+      <rect x="-9" y="-30" width="18" height="24" rx="8" fill="#3A7BD5" stroke="#243042" stroke-width="3"/>
+      <circle cx="0" cy="-40" r="10" fill="#f3c9a4" stroke="#243042" stroke-width="3"/>
+      <path d="M-10 -44 q10 -12 20 0" fill="#243042"/>
+      <circle cx="12" cy="-20" r="7" fill="#F2C14E" stroke="#b8871a" stroke-width="2.5"/>
+    </g>`;
+  estradaPath = document.getElementById("rua");
+  estradaLen = estradaPath.getTotalLength();
+  moveViajante();
+}
+function moveViajante(){
+  const r = Math.min(1, S.meta / meta.preco) * 0.93;
+  const pt = estradaPath.getPointAtLength(estradaLen * r);
+  document.getElementById("viajante").style.transform = `translate(${pt.x}px, ${pt.y - 6}px)`;
+}
+function atualizaSim(){
+  document.getElementById("s-meta").textContent = real(S.meta);
+  document.getElementById("s-res").textContent = real(S.res);
+  document.getElementById("sp-meta").textContent = `${Math.min(100, Math.round(S.meta/meta.preco*100))}% do objetivo`;
+  document.getElementById("sp-res").textContent = S.res >= 150 ? "Boa proteção" : S.res > 0 ? "Proteção pequena" : "Sem proteção";
+  enche(jarsSim.meta, S.meta / meta.preco);
+  enche(jarsSim.res, S.res / 300);
+  moveViajante();
+}
+function proximoMes(){
+  S.mes++;
+  if (S.mes > eventos.length) return resultado();
+  document.getElementById("mesTag").textContent = `Mês ${S.mes} de ${eventos.length}`;
+  S.meta += aloc.meta; S.res += aloc.res; S.lazMes = aloc.laz;
+  let dep = `Entrou no mês: ${real(aloc.meta)} na meta e ${real(aloc.res)} na reserva.`;
+  if (S.dreno){
+    const r = Math.min(S.dreno, S.res); S.res -= r; if (r < S.dreno) tiraMeta(S.dreno - r);
+    dep += ` Saíram ${real(S.dreno)} da reserva para cobrir a passagem.`;
+  }
+  document.getElementById("deposito").textContent = dep;
+  atualizaSim();
+  mostraEvento(eventos[S.mes - 1]);
+}
+function mostraEvento(ev){
+  if (ev.o.length === 0) ev = eventoFinal(ev);
+  const box = document.getElementById("evento");
+  box.innerHTML = `<span class="tipo" style="background:${ev.cor}">${ev.tipo}</span>
+    <h3>${ev.t}</h3><p>${ev.d}</p>
+    <div class="escolhas">${ev.o.map((o,k)=>`<button class="escolha" data-k="${k}" ${o.off?"disabled":""}>${o.t}<small>${o.s}</small></button>`).join("")}</div>
+    <div class="retorno" id="ret" role="status"></div>
+    <div class="acoes" style="margin-top:14px"><button class="btn" id="seguir" hidden>Próximo mês</button></div>`;
+  box.querySelectorAll(".escolha").forEach(b => b.onclick = () => {
+    const o = ev.o[b.dataset.k];
+    const [tipo, msg] = o.f();
+    S.hist.push({t:ev.t, esc:o.t, tipo, msg});
+    box.querySelectorAll(".escolha").forEach(x => x.disabled = true);
+    b.classList.add("marcada");
+    const r = document.getElementById("ret");
+    r.className = "retorno mostra " + tipo; r.textContent = msg;
+    atualizaSim();
+    const s = document.getElementById("seguir");
+    s.textContent = S.mes === eventos.length ? "Ver o resultado" : "Próximo mês";
+    s.hidden = false; s.focus();
+    s.onclick = proximoMes;
+  });
+}
+function eventoFinal(base){
+  const desc = Math.round(meta.preco * 0.85), parc = Math.round(meta.preco * 1.3 / 12);
+  const pode = S.meta >= desc;
+  return {...base,
+    d:`A loja anunciou ${meta.art} por ${real(desc)} à vista (15% de desconto). No pote da meta você tem ${real(S.meta)}.`,
+    o:[
+      {t: pode ? "Compro à vista com desconto!" : `Comprar à vista (faltam ${real(desc - S.meta)})`, s: pode ? `−${real(desc)} da meta` : "Ainda não dá", off:!pode,
+       f:()=>{ S.meta -= desc; S.comprou = true; S.pago = desc; return ["bom", `Conquistado! E ainda economizou ${real(meta.preco - desc)} por ter o dinheiro na mão.`]; }},
+      {t:`Parcelo em 12x de ${real(parc)} no cartão`, s:`Total: ${real(parc*12)} com juros`, f:()=>{ S.parcelou = true; return ["ruim", `Você leva agora, mas paga ${real(parc*12 - meta.preco)} a mais em juros e fica um ano preso às parcelas.`]; }},
+      {t:"Continuo juntando até ter o valor", s:"A meta segue crescendo", f:()=>["neutro","Paciência! Promoções voltam, e quem tem o dinheiro guardado aproveita a próxima."]}
+    ]};
+}
+
+/* ---------- Etapa 4 ---------- */
+function resultado(){
+  etapa(4);
+  const box = document.getElementById("resultado");
+  let titulo, texto;
+  if (S.comprou){
+    titulo = `Meta conquistada!`;
+    texto = `Você conquistou ${meta.art} por ${real(S.pago)} e ainda terminou com ${real(S.meta)} no pote da meta e ${real(S.res)} de reserva. O orçamento fez o sonho acontecer.`;
+    chuva();
+  } else if (S.parcelou){
+    titulo = "Conquistou, mas com dívida";
+    texto = `Você tem ${meta.art}, mas vai pagar parcelas por 12 meses. Com ${real(S.meta)} guardados, faltava pouco para comprar à vista e sem juros.`;
+  } else {
+    const falta = Math.max(0, meta.preco - S.meta);
+    const meses = aloc.meta > 0 ? Math.ceil(falta / aloc.meta) : null;
+    titulo = "Quase lá";
+    texto = `Você juntou ${real(S.meta)} de ${real(meta.preco)}. Faltam ${real(falta)}` + (meses ? `, o que dá cerca de ${meses} ${meses===1?"mês":"meses"} no ritmo atual.` : ". Sem dinheiro indo para a meta todo mês, ela não chega.");
+  }
+  box.innerHTML = `<svg class="grande" viewBox="0 0 64 64" aria-hidden="true">${icones[meta.id].replace(/<\/?svg[^>]*>/g,"")}</svg>
+    <div><h3>${titulo}</h3><p style="margin:0;color:var(--suave)">${texto}</p></div>`;
+  document.getElementById("licoes").innerHTML = S.hist.map(h => `<li class="${h.tipo}"><b>${h.t}</b>${h.msg}</li>`).join("");
+}
+function chuva(){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = document.createElement("div"); c.className = "chuva";
+  for (let k=0;k<40;k++){
+    const i = document.createElement("i");
+    i.style.left = Math.random()*100 + "vw";
+    i.style.animationDelay = Math.random()*0.8 + "s";
+    c.appendChild(i);
+  }
+  document.body.appendChild(c);
+  setTimeout(() => c.remove(), 3400);
+}
+document.getElementById("refazerPlano").onclick = () => { aloc = {ess:0,meta:0,res:0,laz:0}; montaOrcamento(); etapa(2); };
+document.getElementById("outraMeta").onclick = () => { aloc = {ess:0,meta:0,res:0,laz:0}; etapa(1); };
+
+etapa(1);
+window.scrollTo(0,0);
+</script>
+</body>
+</html>
